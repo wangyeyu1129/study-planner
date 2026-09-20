@@ -1,32 +1,48 @@
 package studyplanner;
 
 import studyplanner.model.Course;
+import studyplanner.model.Priority;
 import studyplanner.model.Task;
+import studyplanner.service.StudyPlanner;
+
+import java.time.LocalDate;
+import java.util.List;
 
 public class Main {
     public static void main(String[] args) {
-        Course csc207 = new Course("CSC207", "Software Design");
+        StudyPlanner planner = new StudyPlanner();
+        planner.addCourse(new Course("CSC207", "Software Design"));
+        planner.addCourse(new Course("MAT244", "Ordinary Differential Equations"));
 
-        Task assignment = new Task(
-                "Assignment 1",
-                "2026-09-25"
-        );
+        LocalDate today = LocalDate.now();
+        Task assignment = new Task("Assignment 1", today.plusDays(3), Priority.HIGH);
+        Task quiz = new Task("Quiz 1", today.plusDays(7), Priority.MEDIUM);
+        Task review = new Task("Midterm Review", today.plusDays(1), Priority.HIGH);
+        Task reading = new Task("Reading", today.minusDays(1), Priority.LOW);
 
-        Task quiz = new Task(
-                "Quiz 1",
-                "2026-10-02"
-        );
+        planner.addTask("CSC207", quiz);
+        planner.addTask("CSC207", assignment);
+        planner.addTask("MAT244", review);
+        planner.addTask("MAT244", reading);
 
-        csc207.addTask(assignment);
-        csc207.addTask(quiz);
+        printTasks("Upcoming tasks (earliest first)", planner.getUpcomingTasks());
+        printTasks("High priority", planner.getTasksByPriority(Priority.HIGH));
 
-        System.out.println(csc207.getCourseCode());
-        System.out.println(csc207.getCourseName());
+        planner.markTaskCompleted("CSC207", assignment);
+        printTasks("Completed tasks", planner.getCompletedTasks());
+        printTasks("Incomplete high priority", planner.getUpcomingTasks(Priority.HIGH));
 
-        for (Task task : csc207.getTasks()) {
-            System.out.println(
-                    task.getTitle() + " - " + task.getDueDate()
-            );
+        planner.markTaskIncomplete("CSC207", assignment);
+        System.out.println("Assignment reopened: " + !assignment.isCompleted());
+        printTasks("Find Quiz 1", planner.findTasksByTitle("csc207", "Quiz 1"));
+        System.out.println("Quiz deleted: " + planner.removeTask("CSC207", quiz));
+        printTasks("Remaining tasks by deadline", planner.getTasksSortedByDueDate());
+    }
+
+    private static void printTasks(String heading, List<Task> tasks) {
+        System.out.println("\n" + heading + ":");
+        for (Task task : tasks) {
+            System.out.println("  " + task + " | Overdue: " + task.isOverdue());
         }
     }
 }
