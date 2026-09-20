@@ -48,9 +48,14 @@ public class StudyPlannerApp extends Application {
                     refreshTasks();
                 });
 
+        Button addCourseButton = new Button("+ 添加课程");
+        addCourseButton.setMaxWidth(Double.MAX_VALUE);
+        addCourseButton.setOnAction(event -> showAddCourseDialog());
+
         VBox sidebar = new VBox(
                 12,
                 new Label("我的课程"),
+                addCourseButton,
                 courseList
         );
         sidebar.setPadding(new Insets(20));
@@ -423,6 +428,84 @@ public class StudyPlannerApp extends Application {
         }
 
         return null;
+    }
+
+    private void showAddCourseDialog() {
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle("添加课程");
+        dialog.setHeaderText("填写课程信息");
+        dialog.initOwner(courseList.getScene().getWindow());
+
+        ButtonType addType = new ButtonType(
+                "添加",
+                ButtonBar.ButtonData.OK_DONE
+        );
+
+        dialog.getDialogPane().getButtonTypes().addAll(
+                addType,
+                ButtonType.CANCEL
+        );
+
+        TextField codeField = new TextField();
+        codeField.setPromptText("例如：CSC236");
+
+        TextField nameField = new TextField();
+        nameField.setPromptText("例如：Theory of Computation");
+
+        Label errorLabel = new Label();
+        errorLabel.setStyle("-fx-text-fill: #c62828;");
+
+        GridPane form = new GridPane();
+        form.setHgap(15);
+        form.setVgap(15);
+        form.setPadding(new Insets(20));
+
+        form.addRow(0, new Label("课程代码"), codeField);
+        form.addRow(1, new Label("课程名称"), nameField);
+        form.add(errorLabel, 0, 2, 2, 1);
+
+        dialog.getDialogPane().setContent(form);
+
+        Button confirmButton = (Button)
+                dialog.getDialogPane().lookupButton(addType);
+
+        confirmButton.addEventFilter(
+                javafx.event.ActionEvent.ACTION,
+                event -> {
+                    String code = codeField.getText().trim();
+                    String name = nameField.getText().trim();
+
+                    if (code.isEmpty() || name.isEmpty()) {
+                        errorLabel.setText("课程代码和名称都不能为空。");
+                        event.consume();
+                    } else if ("全部课程".equals(code)) {
+                        errorLabel.setText("请使用其他课程代码。");
+                        event.consume();
+                    } else if (planner.findCourseByCode(code) != null) {
+                        errorLabel.setText("这个课程代码已经存在。");
+                        event.consume();
+                    }
+                }
+        );
+
+        dialog.showAndWait().ifPresent(result -> {
+            if (result == addType) {
+                String code = codeField.getText()
+                        .trim()
+                        .toUpperCase(java.util.Locale.ROOT);
+
+                String name = nameField.getText().trim();
+
+                Course course = new Course(code, name);
+                planner.addCourse(course);
+
+                courseList.getItems().add(course.getCourseCode());
+                courseList.getSelectionModel()
+                        .select(course.getCourseCode());
+
+                refreshTasks();
+            }
+        });
     }
 
     public static void main(String[] args) {
